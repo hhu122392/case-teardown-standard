@@ -1,0 +1,4 @@
+interface:
+  display_name: "案例拆解标准"
+  short_description: "把增长案例拆成飞书版或 Google Docs 版案例文档"
+  default_prompt: "使用 $case-teardown-standard，先判断输出平台：飞书/Lark 走 lark-version，Google Docs/谷歌文档走 google-docs-version。"
