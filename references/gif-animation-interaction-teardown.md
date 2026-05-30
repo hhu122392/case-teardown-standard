@@ -28,16 +28,72 @@
 如果只有 GIF 文件，优先用脚本：
 
 ```powershell
-python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_gif_keyframes.py "input.gif" --output-dir "outputs\gif-frames" --name "interaction" --frames 9 --make-strip
+$skillRoot = "<case-teardown-standard skill root>"
+python (Join-Path $skillRoot "scripts\build_gif_keyframes.py") "input.gif" --output-dir "outputs\gif-frames" --name "interaction" --frames 9 --make-strip
 ```
 
 如果是录屏视频，用：
 
 ```powershell
-python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interaction_keyframes.py "input.mp4" --start 75.2 --duration 3.5 --output-dir "outputs\interaction" --name "reward" --frames 6 --make-strip
+$skillRoot = "<case-teardown-standard skill root>"
+python (Join-Path $skillRoot "scripts\build_interaction_keyframes.py") "input.mp4" --start 75.2 --duration 3.5 --output-dir "outputs\interaction" --name "reward" --frames 6 --make-strip
 ```
 
 需要做案例讲解红框时可以加 `--highlight x,y,w,h`。红框只属于讲解证据，不属于原始产品 UI。
+
+## 多阶段交互链路拆解
+
+当输入是超过 10 秒的完整录屏、活动流程、H5 转化链路或 App 用户路径时，不要直接按“单个 GIF 动效”写。必须先做宏观链路，再做微观动效。
+
+### 第一层：宏观链路
+
+先把完整流程切成阶段。一个阶段只描述一个主要用户任务。
+
+| 阶段 | 时间范围 | 页面状态 | 用户任务 | 关键动效 | 状态变化 | 业务目的 |
+|---|---|---|---|---|---|---|
+
+要求：
+
+- 每个阶段必须有起点和终点。
+- 时间范围来自抽帧证据；不确定就写“约”并标 `[推断]`。
+- 页面状态写清底层页面、弹层、遮罩、按钮是否存在。
+- 业务目的写大白话，例如“让用户先参与”“把奖励绑定到下单”“制造限时压力”。
+
+### 第二层：微观动效
+
+再对每个关键动效按“触发、层级、时序、运动参数、状态机、增长目的、风险和复用”细拆。不要把长链路压成一个大动画描述。
+
+### 业务状态机
+
+长链路必须给业务状态机。通用状态机只能解释单个弹窗，不够解释完整转化流程。
+
+示例：
+
+```ts
+type RewardFlowState =
+  | "ENTRY"
+  | "GAME_IDLE"
+  | "GAME_RUNNING"
+  | "RESULT_REVEALED"
+  | "CONDITION_SHOWN"
+  | "TASK_BINDING"
+  | "SOCIAL_PROOF"
+  | "ACCOUNT_CONFIRM"
+  | "REWARD_UPGRADE"
+  | "FINAL_CONFIRMATION"
+  | "CHECKOUT_PENDING"
+  | "COMPLETED"
+  | "EXPIRED";
+```
+
+每个关键动效都要能对应状态变化，例如：
+
+```text
+GAME_RUNNING -> RESULT_REVEALED
+RESULT_REVEALED -> CONDITION_SHOWN
+ACCOUNT_CONFIRM -> REWARD_UPGRADE
+REWARD_UPGRADE -> FINAL_CONFIRMATION
+```
 
 ## 动效拆解结构
 
@@ -78,6 +134,13 @@ python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interac
 
 时长不确定时，写“约”。证据不足要标 `[推断]`。
 
+长链路或开发交付场景里，时序表要升级为：
+
+| 时间 | 触发来源 | 前状态 | 后状态 | 画面变化 | 运动参数 | 用户感知 | 业务目的 |
+|---|---|---|---|---|---|---|---|
+
+触发来源要区分：用户点击、系统自动、倒计时、接口成功、接口失败、任务完成。
+
 ### 4. 运动参数
 
 把动效还原到可实现的参数：
@@ -88,6 +151,25 @@ python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interac
 - 粒子：数量、方向、颜色、消失方式。
 - 数字：是否跳动、滚动、飞入、闪光。
 - 退场：缩小、上移、下落、淡出、飞向目标区域。
+
+当用户要求“开发实现”“H5 复刻”“给工程师”时，关键动效还要输出 Motion Spec。不要只写观感。
+
+```ts
+type MotionSpec = {
+  id: string;
+  element: string;
+  trigger: "page_load" | "user_tap" | "auto" | "timer" | "api_success" | "api_error";
+  from: Record<string, string | number>;
+  to: Record<string, string | number>;
+  durationMs: number;
+  delayMs?: number;
+  easing?: string;
+  repeat?: boolean;
+  layer: "background" | "mask" | "main" | "fx" | "text" | "button" | "toast";
+  reducedMotionFallback: string;
+  mobilePerformanceRisk: "low" | "medium" | "high";
+};
+```
 
 ### 5. 状态机
 
@@ -113,6 +195,22 @@ python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interac
 - 入账动画证明奖励进账户，降低怀疑。
 - 数值差距变小，推动继续完成下一步。
 
+长链路拆解里，每个关键动效至少标一个心理机制，方便横向比较案例：
+
+| 标签 | 含义 |
+|---|---|
+| Attention | 抢注意力 |
+| Anticipation | 制造期待 |
+| Near-control | 制造可控感 |
+| Reward ownership | 奖励所有权 |
+| Loss aversion | 怕失去 |
+| Social proof | 社会证明 |
+| Social comparison | 社会对比 |
+| Sunk cost | 沉没成本 |
+| Upgrade escalation | 奖励升级 |
+| Deadline pressure | 限时压力 |
+| Commitment | 主动承诺 |
+
 ### 7. 风险和复用
 
 写清楚这套动效复用时要注意：
@@ -121,6 +219,127 @@ python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interac
 - 倒计时、提现门槛、剩余差额要和真实规则一致。
 - 如果是现金类活动，要注意提现条件、到账口径和合规提示。
 - 复用到非现金场景时，把“现金入账”改成“权益解锁/进度推进/礼品锁定”。
+
+对于抽奖、现金、bonus、casino、充值、提现类场景，必须额外检查：
+
+- 是否把优惠券说成现金余额。
+- 是否把条件奖励说成已到账。
+- 是否存在假倒计时。
+- 是否存在虚假中奖名单。
+- 是否隐藏提现门槛、流水要求、地区限制、年龄限制或资格限制。
+- 是否误导用户认为抽奖结果由自己控制。
+- 是否用过强光效夸大奖励价值。
+- 是否在用户未完成条件前使用“已到账”“已存入账户”等高风险文案。
+
+更稳妥表达示例：
+
+| 高风险表达 | 更稳妥表达 |
+|---|---|
+| 已到账 RM1,500 | RM1,500 奖励已锁定，完成条件后可领取 |
+| 现金已进入账户 | 奖励额度已加入活动账户 |
+| 立即提现 | 完成任务后可申请领取 |
+| 仅此一次，关闭失效 | 本活动页面限时有效，请以规则页为准 |
+| 你控制了中奖结果 | 点击停止查看你的奖励 |
+
+## 开发交付补充
+
+当用户要求“开发生成”“前端实现”“H5 复刻”“给工程师”时，除了拆解和提示词，还必须输出这些内容：
+
+1. 组件树。
+2. 组件 Props。
+3. 业务状态机。
+4. Motion Spec 动画参数。
+5. API 数据结构。
+6. 埋点事件。
+7. 异常状态。
+8. 合规提示。
+
+组件树示例：
+
+```text
+RewardFlowPage
+- ProductGridBackdrop
+- DarkOverlay
+- RewardWheelModal
+  - WheelCanvas
+  - WheelPointer
+  - WheelActionButton
+- PrizeResultModal
+- WinnerListOverlay
+- AccountConfirmSheet
+- NewUserUpgradeOverlay
+- FinalRewardCard
+- CountdownBar
+- CheckoutCTA
+```
+
+API 数据结构示例：
+
+```ts
+type RewardInitResponse = {
+  activityId: string;
+  userId: string;
+  currency: string;
+  baseReward: number;
+  upgradedReward?: number;
+  condition: {
+    type: "purchase" | "deposit" | "signup" | "referral" | "checkout";
+    requiredCount: number;
+    text: string;
+  };
+  countdown: {
+    expiresAt: string;
+    remainingSeconds: number;
+  };
+  userFlags: {
+    isNewUser: boolean;
+    isEligible: boolean;
+    hasClaimedBefore: boolean;
+  };
+};
+```
+
+## 埋点与实验指标
+
+当拆解用于增长复用、产品方案或开发交付时，要补埋点和实验指标。每个关键动效至少考虑：
+
+- 曝光事件。
+- 开始事件。
+- 完成事件。
+- 用户中断事件。
+- CTA 点击事件。
+- 后续转化事件。
+- 可 A/B 测试变量。
+
+示例事件：
+
+```ts
+type TrackingEvent =
+  | "reward_flow_enter"
+  | "wheel_modal_show"
+  | "wheel_spin_start"
+  | "wheel_stop_click"
+  | "prize_result_show"
+  | "claim_condition_show"
+  | "winner_list_show"
+  | "account_confirm_show"
+  | "reward_upgrade_start"
+  | "reward_upgrade_complete"
+  | "countdown_show"
+  | "checkout_cta_click"
+  | "page_exit_before_checkout"
+  | "reward_expired";
+```
+
+常见 A/B 变量：
+
+| 变量 | 版本 A | 版本 B |
+|---|---|---|
+| 转盘时长 | 短等待 | 长等待 |
+| 奖励揭晓方式 | 弹窗 | 卡片飞入账户 |
+| 赢家名单 | 展示他人小奖 | 展示无人中奖 |
+| 倒计时 | 30 分钟 | 10 分钟 |
+| 升级理由 | 新用户 | 赢家专属 |
 
 ## 一比一还原提示词结构
 
@@ -137,9 +356,148 @@ python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interac
 9. **不要做**：不要加案例红框、不要改风格、不要变成通用抽奖页。
 10. **可选讲解层**：如果用户要案例图，再加红框和标注，不要默认加。
 
+## 生产用提示词标准
+
+当用户明确说“喂给 AI 复刻”“生成 H5”“做高保真原型”“一比一还原”时，不能只输出分析式长提示词。必须先判断这段动效是简单动效还是复杂流程。
+
+### 简单动效
+
+满足这些条件时，可以输出一段式提示词：
+
+- 单个弹窗、单个奖励反馈、单个按钮点击，或 1 到 3 个状态。
+- 总时长约 6 秒以内。
+- 背景和主体都能用 CSS / SVG / Canvas 直接重画。
+
+一段式提示词也必须写清：首屏、层级、时序、运动参数、点击后状态、不要做、验收标准。
+
+### 复杂流程
+
+满足任一条件时，默认输出“生产用提示词包”，不要只给一段长提示词：
+
+- 超过 3 个关键状态。
+- 总时长超过约 10 秒。
+- 底层页面复杂，比如商品列表、订单页、聊天页、地图页、真实图片很多。
+- 同时包含弹窗、转场、名单滚动、账户确认、奖励升级、倒计时、清单等多种动效。
+- 用户反馈“AI 跑出来不像”“生成效果不好”“变成通用页”。
+
+生产用提示词包必须包含：
+
+1. **先说结论**：告诉用户一段式生成风险高，建议分轮生成。
+2. **视觉基准**：列出总览拼图和关键帧拼图，说明要上传给 AI 或作为底图 / 参考图。
+3. **生产策略**：复杂背景优先用关键帧截图做参考或底图，AI 重点复刻动效层；不要强行纯代码重画所有真实商品图、头像和复杂卡片。
+4. **分轮提示词**：至少拆成“静态骨架 -> 前半段动效 -> 后半段动效”。更长流程继续拆。
+5. **一段式备用提示词**：如果用户只能喂一次，再给压缩版。
+6. **返工短评模板**：给常见失败情况的短提示，方便用户让 AI 改。
+7. **验收标准**：用 8 到 12 条硬指标判断像不像。
+
+## 生产提示词写法规则
+
+### 1. 先锁首屏
+
+复杂复刻先要求 AI 做静态骨架。首屏不像，后面的动效不用继续做。
+
+首屏提示词必须写清：
+
+- 画布比例和尺寸。
+- 底层页面是什么，是否继续保留。
+- 主视觉大小和位置。
+- 遮罩颜色和透明度。
+- 主按钮位置、颜色和文案。
+- 哪些元素绝对不能省。
+
+### 2. 明确主次
+
+提示词最前面写“最重要的视觉基准”或“强约束”，把最不能错的东西压到前 10 条。
+
+常见强约束包括：
+
+- 背景必须是原页面，不能换成纯渐变。
+- 主奖励金额必须最大。
+- 关键弹窗必须出现，不能省。
+- 某个弹窗必须从底部上滑，不能居中弹。
+- 某个名单必须横向滚动，不能做成竖向排行榜。
+- 奖励类型不能改，比如优惠券包不能写成现金到账。
+
+### 3. 分轮生成
+
+复杂流程默认这样拆：
+
+1. **第 1 轮：静态骨架**。只做基础页面和第一屏主视觉，不做动画。
+2. **第 2 轮：前半段动效**。在上一版代码基础上加前几个状态，不要重写结构。
+3. **第 3 轮：后半段动效**。继续追加后续状态，不要重写前半段。
+
+每一轮提示词都要写：
+
+- 本轮只做什么。
+- 不要重写什么。
+- 状态顺序。
+- 时间压缩方式。
+- 动效参数。
+- 本轮验收标准。
+
+### 4. 压缩时间，不强求原速
+
+录屏里的真实时长不一定适合原型生成。超过 10 秒的流程，默认建议压缩成 15 到 25 秒演示版。
+
+写法示例：
+
+- “原视频是 62 秒，复刻原型做 22 秒演示版，保留状态顺序，不按原速慢放。”
+- “点击按钮可立即推进；如果用户不点，按时间自动推进。”
+
+### 5. 用状态机防止画面堆叠
+
+提示词里必须写状态机，并要求“任一时刻只显示一个主视觉层”。复杂动效最常见失败是所有弹窗同时堆在一屏。
+
+写法示例：
+
+```text
+任何时刻只显示一个主视觉层：转盘、票券、条件横幅、中奖名单、账户确认、升级动画、限时文案、清单弹窗只能按顺序出现。每个状态进入时先隐藏上一个状态。
+```
+
+### 6. 复杂背景不要强行纯代码重画
+
+如果底层页面包含真实商品、头像、订单、地图、聊天等复杂内容，提示词要明确：
+
+- 可以用关键帧截图做底图或参考图。
+- AI 重点复刻遮罩、弹窗、按钮、光效、数字变化、状态机。
+- 若必须纯代码实现，商品图用相似占位图即可，但布局、颜色和层级必须像。
+
+### 7. 加返工短评
+
+交付生产用提示词时，必须给返工短评模板。常见模板包括：
+
+```text
+第一屏不像：保留代码结构，只改视觉。放大主视觉，恢复原页面背景，加深遮罩，改回原文案和按钮位置，不要改状态机。
+```
+
+```text
+做成通用页：改回参考视频里的业务页。主体不是通用抽奖，而是具体奖励流程；背景必须一直保留原页面；后续必须有账户确认、升级、限时和清单。
+```
+
+```text
+后半段缺失：不要重写前半段，只追加后半段状态，并按状态机隐藏上一个主视觉层。
+```
+
+```text
+状态堆叠：任何时刻只显示一个主视觉层，每个状态进入前先隐藏上一个状态。
+```
+
+## 生产提示词失败自查
+
+如果 AI 跑出来效果不好，先按下面检查提示词，不要先归因到模型能力：
+
+- 是否一次要求生成太长流程。
+- 是否没有先锁首屏。
+- 是否没有告诉 AI 哪些元素绝对不能省。
+- 是否没有给关键帧或视觉基准图。
+- 是否要求纯代码重画复杂商品图或头像。
+- 是否把分析内容和生成指令混在一起。
+- 是否没有明确状态机，导致多个弹窗堆叠。
+- 是否没有返工短评，导致下一轮修改又重写跑偏。
+
 ## 输出模板
 
-```markdown
+````markdown
 ## 动效证据
 
 - 源文件：
@@ -148,6 +506,11 @@ python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interac
 - 时长：
 - 关键帧拼图：
 - 证据边界：
+
+## 宏观链路
+
+| 阶段 | 时间范围 | 页面状态 | 用户任务 | 关键动效 | 状态变化 | 业务目的 |
+|---|---|---|---|---|---|---|
 
 ## 实现拆解
 
@@ -161,9 +524,27 @@ python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interac
 | 时间 | 画面变化 | 运动参数 | 用户感知 |
 |---|---|---|---|
 
+复杂流程或开发交付时，改用：
+
+| 时间 | 触发来源 | 前状态 | 后状态 | 画面变化 | 运动参数 | 用户感知 | 业务目的 |
+|---|---|---|---|---|---|---|---|
+
 ### 状态机
 
 `idle -> triggered -> popup-entering -> waiting-action -> collecting -> settled`
+
+复杂流程补业务状态机。
+
+### Motion Spec
+
+```ts
+[开发交付场景下，输出关键动效 Motion Spec]
+```
+
+### 心理机制
+
+| 动效 | 心理机制 | 解释 |
+|---|---|---|
 
 ### 增长目的
 
@@ -175,12 +556,58 @@ python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interac
 [按“一比一还原提示词结构”输出完整提示词]
 ```
 
+## 生产用提示词包
+
+### 推荐生成方式
+
+- 简单动效：一段式生成。
+- 复杂流程：分轮生成，先静态骨架，再前半段，再后半段。
+
+### 第 1 轮：静态骨架
+
+```text
+[只锁首屏、基础页面、主视觉大小、遮罩、按钮和硬约束]
+```
+
+### 第 2 轮：前半段动效
+
+```text
+[在上一版基础上追加前半段状态，不要重写结构]
+```
+
+### 第 3 轮：后半段动效
+
+```text
+[继续追加后半段状态，不要重写前半段]
+```
+
+### 一段式备用提示词
+
+```text
+[只能一次喂给 AI 时使用，压缩时长，保留完整状态顺序和硬约束]
+```
+
+### 返工短评
+
+```text
+[按第一屏不像、做成通用页、后半段缺失、状态堆叠等问题分别给短评]
+```
+
+## 开发交付补充
+
+- 组件树：
+- Props：
+- API 数据结构：
+- 埋点事件：
+- 异常状态：
+- A/B 测试变量：
+
 ## 复用注意
 
 - 证据不足：
 - 合规风险：
 - 复用改法：
-```
+````
 
 ## 完成标准
 
@@ -192,5 +619,11 @@ python C:\Users\zhoua\.codex\skills\case-teardown-standard\scripts\build_interac
 - 已把动效拆成层级、时序、运动参数、状态机。
 - 已写点击后或动效结束后的真实状态变化。
 - 已解释增长目的和用户心理作用。
-- 已输出完整提示词，可以直接交给 AI 生成 H5 / 动画 / 原型。
+- 超过 10 秒的长录屏或完整链路，已先输出宏观链路表，再拆微观动效。
+- 复杂流程已输出业务状态机，不只写通用弹窗状态。
+- 开发交付场景已补组件树、Props、API 数据结构、Motion Spec、埋点事件和异常状态。
+- 增长复用场景已补心理机制标签和可验证指标。
+- 抽奖、现金、bonus、casino、充值、提现类场景已补强合规口径。
+- 已把拆解文档和生产用提示词分开；复杂流程已给分轮提示词、视觉基准、硬约束、返工短评和验收标准。
+- 已输出可执行提示词，可以直接交给 AI 生成 H5 / 动画 / 原型。
 - 在线文档正文已放静态关键帧或拼图，没有只放 GIF 路径。

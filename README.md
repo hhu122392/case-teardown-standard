@@ -120,6 +120,21 @@ IDE Agent 必须能访问本地文件，并且最好能运行 PowerShell / bash 
 - GIF 只能作为补充材料。不要在 DOCX、Google Docs、飞书文档正文里只写本地 GIF 路径。
 - 本地 DOCX 如果后续会导入 Google Docs 或其他在线文档，更要用 PNG 关键帧做主证据，因为 GIF 经常会丢失或不可见。
 
+### GIF / 录屏动效拆解标准
+
+GIF、短视频和录屏片段统一按 `references/gif-animation-interaction-teardown.md` 执行。核心要求是先定证据边界，再抽连续关键帧，然后拆层级、时序、运动参数、状态机、增长目的和风险。
+
+简单动效可以输出一段式还原提示词。复杂流程不要只给一段很长的提示词，必须把拆解文档和生产用提示词分开：
+
+- 超过 10 秒的录屏或完整活动链路，先做宏观链路表，再拆每个关键微观动效。
+- 长链路要补业务状态机，不只写 `idle -> triggered -> settled` 这种单弹窗状态。
+- 面向 H5 / 原型 / 动画复刻时，默认给分轮提示词：先静态骨架，再前半段动效，再后半段动效。
+- 生产用提示词要包含视觉基准图、硬约束、验收标准和返工短评，避免 AI 生成通用抽奖页。
+- 面向开发交付时，还要补组件树、Props、API 数据结构、Motion Spec、埋点事件、异常状态和合规口径。
+- 抽奖、现金、bonus、casino、充值、提现类案例，要检查假倒计时、虚假中奖名单、隐藏提现门槛、优惠券冒充现金到账等风险。
+
+脚本路径不要写死某个人的本地目录。示例中的 `<case-teardown-standard skill root>`、`<google-docs-version skill root>`、`<lark-version skill root>` 都表示当前机器上的实际 skill 安装目录。
+
 ### 文案标准
 
 - 案例命名、文档标题、小节里的案例名称都用中文。
@@ -178,7 +193,8 @@ IDE Agent 必须能访问本地文件，并且最好能运行 PowerShell / bash 
 视频抽关键帧：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-version\scripts\extract_video_keyframes.py" `
+$skillRoot = "<google-docs-version skill root>"
+python (Join-Path $skillRoot "scripts\extract_video_keyframes.py") `
   "C:\path\case.mp4" `
   --out-dir "C:\path\frames" `
   --every 12 `
@@ -188,7 +204,8 @@ python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-versio
 生成用户路径故事板：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-version\scripts\build_user_path_storyboard.py" `
+$skillRoot = "<google-docs-version skill root>"
+python (Join-Path $skillRoot "scripts\build_user_path_storyboard.py") `
   --items "C:\path\storyboard-items.tsv" `
   --output "C:\path\user-path-storyboard.png"
 ```
@@ -196,7 +213,8 @@ python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-versio
 生成 UI 交互连续关键帧：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-version\scripts\build_interaction_keyframes.py" `
+$skillRoot = "<google-docs-version skill root>"
+python (Join-Path $skillRoot "scripts\build_interaction_keyframes.py") `
   "C:\path\case.mp4" `
   --start "00:01:20.000" `
   --duration 2.5 `
@@ -209,7 +227,8 @@ python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-versio
 可选生成 GIF：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-version\scripts\build_interaction_gif.py" `
+$skillRoot = "<google-docs-version skill root>"
+python (Join-Path $skillRoot "scripts\build_interaction_gif.py") `
   "C:\path\case.mp4" `
   --start "00:01:20.000" `
   --duration 2.5 `

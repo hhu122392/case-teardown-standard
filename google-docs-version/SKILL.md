@@ -74,7 +74,8 @@ description: "Use when 用户要求把增长案例、竞品案例、用户路径
    - 用本版本脚本生成故事板：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-version\scripts\build_user_path_storyboard.py" `
+$skillRoot = "<google-docs-version skill root>"
+python (Join-Path $skillRoot "scripts\build_user_path_storyboard.py") `
   --items "C:\path\storyboard-items.tsv" `
   --output "C:\path\user-path-storyboard.png"
 ```
@@ -124,7 +125,8 @@ python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-versio
 案例材料包含录屏时，用下面脚本抽关键截图：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-version\scripts\extract_video_keyframes.py" `
+$skillRoot = "<google-docs-version skill root>"
+python (Join-Path $skillRoot "scripts\extract_video_keyframes.py") `
   "C:\path\case.mp4" `
   --out-dir "C:\path\frames" `
   --every 12 `
@@ -134,7 +136,8 @@ python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-versio
 已知关键时间点时，用下面方式指定：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-version\scripts\extract_video_keyframes.py" `
+$skillRoot = "<google-docs-version skill root>"
+python (Join-Path $skillRoot "scripts\extract_video_keyframes.py") `
   "C:\path\case.mp4" `
   --out-dir "C:\path\frames" `
   --times "00:00:03,00:00:18,00:00:42,00:01:20"
@@ -153,7 +156,8 @@ python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-versio
 优先用下面脚本从视频生成静态关键帧，并可给关键区域加红框：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-version\scripts\build_interaction_keyframes.py" `
+$skillRoot = "<google-docs-version skill root>"
+python (Join-Path $skillRoot "scripts\build_interaction_keyframes.py") `
   "C:\path\case.mp4" `
   --start "00:01:20.000" `
   --duration 2.5 `
@@ -166,7 +170,8 @@ python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-versio
 如果还需要补充 GIF，再用下面脚本生成动图：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\google-docs-version\scripts\build_interaction_gif.py" `
+$skillRoot = "<google-docs-version skill root>"
+python (Join-Path $skillRoot "scripts\build_interaction_gif.py") `
   "C:\path\case.mp4" `
   --start "00:01:20.000" `
   --duration 2.5 `

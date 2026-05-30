@@ -61,7 +61,8 @@
 已有截图和备注时，用 `scripts/build_user_path_storyboard.py` 生成本地横向图片：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\scripts\build_user_path_storyboard.py" `
+$skillRoot = "<case-teardown-standard skill root>"
+python (Join-Path $skillRoot "scripts\build_user_path_storyboard.py") `
   --items ".\storyboard-items.tsv" `
   --output ".\user-path-storyboard.png"
 ```
@@ -140,7 +141,8 @@ python "$env:USERPROFILE\.codex\skills\case-teardown-standard\scripts\build_user
 当真实截图图片无法作为 image node 写入飞书画板时，用同一份 `storyboard-items.tsv` 生成文字卡片版画板 JSON：
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\case-teardown-standard\scripts\build_whiteboard_path_cards.py" `
+$skillRoot = "<case-teardown-standard skill root>"
+python (Join-Path $skillRoot "scripts\build_whiteboard_path_cards.py") `
   --items ".\storyboard-items.tsv" `
   --output ".\user-path-whiteboard-cards.json" `
   --title "用户完整路径图"
